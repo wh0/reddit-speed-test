@@ -1,0 +1,11 @@
+.intro {
+  max-width: 37rem;
+}
+
+html {
+  font-family: monospace;
+}
+
+input {
+  font: inherit;
+}

@@ -1,0 +1,98 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Reddit speed test</title>
+<link rel="stylesheet" href="omni.css">
+<div class="intro">
+  <p>
+    Is your ISP throttling Reddit video?
+    Or maybe they host it on a toaster from the 60's on the moon.
+  </p>
+  <p>
+    Test by attempting to load one of these videos from their feed.
+  </p>
+</div>
+<script>
+(async () => {
+  try {
+    const feedRes = await fetch('videos.xml');
+    const feedText = await feedRes.text();
+    const vids = feedText.match(/https:\/\/v\.redd\.it\/\w+/g);
+    const vidsSeen = {};
+    const vidsUnique = []
+    for (const v of vids) {
+      if (v in vidsSeen) continue;
+      vidsSeen[v] = true;
+      vidsUnique.push(v);
+    }
+    for (const v of vidsUnique) {
+      const p = document.createElement('p');
+      const b = document.createElement('input');
+      b.type = 'button';
+      b.value = v;
+      b.onclick = (e) => {
+        b.disabled = true;
+        p.appendChild(document.createTextNode(' '));
+        const status = document.createElement('span');
+        status.textContent = 'requesting';
+        p.appendChild(status);
+        p.appendChild(document.createTextNode(' '));
+        const bar = document.createElement('progress');
+        p.appendChild(bar);
+        p.appendChild(document.createTextNode(' '));
+        const bytes = document.createElement('span');
+        bytes.textContent = '-/- bytes';
+        p.appendChild(bytes);
+        p.appendChild(document.createTextNode(' '));
+        const loadTime = document.createElement('span');
+        loadTime.textContent = '- ms';
+        p.appendChild(loadTime);
+        p.appendChild(document.createTextNode(' '));
+        const speed = document.createElement('span');
+        speed.textContent = '- kbps';
+        p.appendChild(speed);
+        (async () => {
+          try {
+            const v720 = `${v}/DASH_720.mp4`;
+
+            let startTime = null;
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', v720, true);
+            xhr.responseType = 'blob';
+            xhr.onreadystatechange = (e) => {
+              if (xhr.readyState >= XMLHttpRequest.LOADING) {
+                status.textContent = xhr.status;
+              }
+            };
+            xhr.onloadstart = (e) => {
+              startTime = e.timeStamp;
+            };
+            xhr.onprogress = (e) => {
+              bar.max = e.total;
+              bar.value = e.loaded;
+              bytes.textContent = `${e.loaded}/${e.total} bytes`;
+              loadTime.textContent = `${(e.timeStamp - startTime).toFixed(0)} ms`;
+              const s = e.loaded * 8 / (e.timeStamp - startTime) * 1000;
+              if (s >= 1_000_000_000) {
+                speed.textContent = `${(s / 1_000_000_000).toFixed(2)} Gbps`;
+              } else if (s >= 1_000_000) {
+                speed.textContent = `${(s / 1_000_000).toFixed(2)} Mbps`;
+              } else {
+                speed.textContent = `${(s / 1_000).toFixed(2)} kbps`;
+              }
+            };
+            xhr.send(null);
+          } catch (e) {
+            console.error(e);
+          }
+        })();
+      };
+      p.appendChild(b);
+      document.body.appendChild(p);
+    }
+    console.log(vids);
+  } catch (e) {
+    console.error(e);
+  }
+})();
+</script>
