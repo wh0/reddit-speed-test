@@ -4,11 +4,11 @@
 <link rel="stylesheet" href="omni.css">
 <div class="intro">
   <p>
-    Is your ISP throttling Reddit video?
-    Or maybe Reddit videos are hosted on a toaster from the 60's on the moon.
+    How slow is Reddit video?
+    Test by attempting to load one of their videos from today.
   </p>
   <p>
-    Test by attempting to load one of these videos from their feed.
+    Note: Some videos may be cached in your browser.
   </p>
 </div>
 <script>
@@ -59,6 +59,8 @@ const attemptFiles = [
 
         let startTime = null;
         let attemptIndex = 0;
+
+        const xhr = new XMLHttpRequest();
         const attemptNext = () => {
           if (attemptIndex >= attemptFiles.length) {
             speed.classList.add('invalid');
@@ -68,8 +70,6 @@ const attemptFiles = [
           xhr.open('GET', `${v}/${attemptFile}`, true);
           xhr.send(null);
         };
-
-        const xhr = new XMLHttpRequest();
         xhr.responseType = 'blob';
         xhr.onreadystatechange = (e) => {
           if (xhr.readyState >= XMLHttpRequest.LOADING) {
@@ -77,6 +77,8 @@ const attemptFiles = [
             if (xhr.status >= 400 && xhr.status < 500) {
               xhr.abort();
               attemptNext();
+            } else if (xhr.status >= 500) {
+              speed.classList.add('invalid');
             }
           }
         };
@@ -97,10 +99,19 @@ const attemptFiles = [
             speed.textContent = `${(s / 1_000).toFixed(2)} kbps`;
           }
         };
+        xhr.onload = (e) => {
+          speed.classList.add('done');
+        };
 
         attemptNext();
       };
       p.appendChild(b);
+      p.appendChild(document.createTextNode(' '));
+      const a = document.createElement('a');
+      a.href = v;
+      a.target = '_blank';
+      a.textContent = 'view';
+      p.appendChild(a);
       document.body.appendChild(p);
     }
     console.log(vids);

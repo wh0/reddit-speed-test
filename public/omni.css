@@ -2,6 +2,16 @@
   max-width: 37rem;
 }
 
+.done {
+  background-color: #4060ff;
+  color: #ffffff;
+}
+
+.invalid {
+  background-color: #ff4040;
+  color: #ffffff;
+}
+
 html {
   font-family: monospace;
 }
