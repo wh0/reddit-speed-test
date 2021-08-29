@@ -12,6 +12,12 @@
   </p>
 </div>
 <script>
+const attemptFiles = [
+  'DASH_720.mp4',
+  'DASH_480.mp4',
+  'DASH_360.mp4',
+  'DASH_240.mp4',
+];
 (async () => {
   try {
     const feedRes = await fetch('videos.xml');
@@ -50,42 +56,49 @@
         const speed = document.createElement('span');
         speed.textContent = '- kbps';
         p.appendChild(speed);
-        (async () => {
-          try {
-            const v720 = `${v}/DASH_720.mp4`;
 
-            let startTime = null;
-
-            const xhr = new XMLHttpRequest();
-            xhr.open('GET', v720, true);
-            xhr.responseType = 'blob';
-            xhr.onreadystatechange = (e) => {
-              if (xhr.readyState >= XMLHttpRequest.LOADING) {
-                status.textContent = xhr.status;
-              }
-            };
-            xhr.onloadstart = (e) => {
-              startTime = e.timeStamp;
-            };
-            xhr.onprogress = (e) => {
-              bar.max = e.total;
-              bar.value = e.loaded;
-              bytes.textContent = `${e.loaded}/${e.total} bytes`;
-              loadTime.textContent = `${(e.timeStamp - startTime).toFixed(0)} ms`;
-              const s = e.loaded * 8 / (e.timeStamp - startTime) * 1000;
-              if (s >= 1_000_000_000) {
-                speed.textContent = `${(s / 1_000_000_000).toFixed(2)} Gbps`;
-              } else if (s >= 1_000_000) {
-                speed.textContent = `${(s / 1_000_000).toFixed(2)} Mbps`;
-              } else {
-                speed.textContent = `${(s / 1_000).toFixed(2)} kbps`;
-              }
-            };
-            xhr.send(null);
-          } catch (e) {
-            console.error(e);
+        let startTime = null;
+        let attemptIndex = 0;
+        const attemptNext = () => {
+          if (attemptIndex >= attemptFiles.length) {
+            speed.classList.add('invalid');
+            return;
           }
-        })();
+          const attemptFile = attemptFiles[attemptIndex++];
+          xhr.open('GET', `${v}/${attemptFile}`, true);
+          xhr.send(null);
+        };
+
+        const xhr = new XMLHttpRequest();
+        xhr.responseType = 'blob';
+        xhr.onreadystatechange = (e) => {
+          if (xhr.readyState >= XMLHttpRequest.LOADING) {
+            status.textContent = xhr.status;
+            if (xhr.status >= 400 && xhr.status < 500) {
+              xhr.abort();
+              attemptNext();
+            }
+          }
+        };
+        xhr.onloadstart = (e) => {
+          startTime = e.timeStamp;
+        };
+        xhr.onprogress = (e) => {
+          bar.max = e.total;
+          bar.value = e.loaded;
+          bytes.textContent = `${e.loaded}/${e.total} bytes`;
+          loadTime.textContent = `${(e.timeStamp - startTime).toFixed(0)} ms`;
+          const s = e.loaded * 8 / (e.timeStamp - startTime) * 1000;
+          if (s >= 1_000_000_000) {
+            speed.textContent = `${(s / 1_000_000_000).toFixed(2)} Gbps`;
+          } else if (s >= 1_000_000) {
+            speed.textContent = `${(s / 1_000_000).toFixed(2)} Mbps`;
+          } else {
+            speed.textContent = `${(s / 1_000).toFixed(2)} kbps`;
+          }
+        };
+
+        attemptNext();
       };
       p.appendChild(b);
       document.body.appendChild(p);
