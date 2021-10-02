@@ -24,6 +24,14 @@ const feedP = (async () => {
 })();
 
 const app = express();
+app.set('trust proxy', true);
+app.use((req, res, next) => {
+  if (!req.secure && req.hostname !== 'localhost') {
+    res.redirect(`https://${req.hostname}${req.url}`);
+    return;
+  }
+  next();
+});
 app.use(express.static('public'));
 app.get('/videos.xml', async (req, res, next) => {
   try {
